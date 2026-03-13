@@ -267,7 +267,7 @@ function RitualTab({rituals,addRitual,deleteRitual}:{rituals:Ritual[];addRitual:
   const save=async()=>{if(!draft.title.trim())return;setSaving(true);const{data}=await addRitual({...draft,manifestation_date:draft.manifestation_date||null});if(data)setActive(data.id);setComposing(false);setDraft(blank);setII("");setTI("");setSaving(false)}
   const iterate=(r:Ritual)=>{setDraft({...r,id:undefined,version:r.version+1,parent_id:r.id,success_rating:0,outcome_flag:"ongoing",manifestation_date:"",outcome:"",date:todayStr(),moon_phase:moon.name,planet_day:getPlanetDay()});setComposing(true)}
   return(
-    <div className="fade" className="ritual-grid" style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:16,minHeight:480}}>
+    <div className="fade ritual-grid" style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:16,minHeight:480}}>
       {/* Sidebar list */}
       <div>
         <button className="btn bg" style={{width:"100%",marginBottom:12}} onClick={()=>{setDraft(blank);setComposing(true)}}>+ New Ritual</button>
