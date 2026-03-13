@@ -96,63 +96,72 @@ function buildTarotAnalytics(logs:TarotLog[]){
   return {topCards,reversed:rev,total:tot,count:logs.length,reversedPct:tot?Math.round((rev/tot)*100):0}
 }
 
-/* CSS - light ethereal theme */
-const injectCSS=()=>{
-  if(typeof document==="undefined"||document.getElementById("gi-css"))return
-  const s=document.createElement("style");s.id="gi-css"
-  s.textContent=`
+/* CSS themes + mobile */
+const THEMES = {
+  ethereal: { name:'Ethereal', icon:'☽', orb1:'#d4b8f0', orb2:'#f0d4f8', nav:'rgba(250,248,255,0.94)',
+    vars:'--bg:#f7f4ff;--surface:#faf8ff;--card:#ffffff;--border:#e0d8f0;--border2:#c8b8e8;--gold:#8050b0;--gd:#8050b010;--gs:#8050b030;--text:#2a1f4a;--dim:#6a5888;--muted:#a898c0;--pro:#7c6af7;--pd:#7c6af710;--ps:#7c6af740;--red:#c04060;--green:#3a8a60;--amber:#a07020;--shadow:0 2px 16px rgba(120,80,180,0.08);', inp:'#fff' },
+  midnight: { name:'Midnight', icon:'🌑', orb1:'#2a1850', orb2:'#1a1035', nav:'rgba(9,8,15,0.95)',
+    vars:'--bg:#09080f;--surface:#0f0d1a;--card:#130f20;--border:#1e1830;--border2:#3a2860;--gold:#c8a84a;--gd:#c8a84a12;--gs:#c8a84a35;--text:#e2ddf2;--dim:#9a90b8;--muted:#4a4468;--pro:#8878f8;--pd:#8878f810;--ps:#8878f840;--red:#e05070;--green:#4ade80;--amber:#f0b429;--shadow:0 2px 20px rgba(0,0,0,0.4);', inp:'#0f0d1a' },
+  bloodmoon: { name:'Blood Moon', icon:'🔴', orb1:'#3a0818', orb2:'#200408', nav:'rgba(15,6,8,0.95)',
+    vars:'--bg:#0f0608;--surface:#180a0c;--card:#200c10;--border:#3a1018;--border2:#6a2030;--gold:#e8784a;--gd:#e8784a12;--gs:#e8784a35;--text:#f0e0d8;--dim:#c09080;--muted:#603040;--pro:#e05878;--pd:#e0587810;--ps:#e0587840;--red:#ff6060;--green:#80d890;--amber:#f0b060;--shadow:0 2px 20px rgba(0,0,0,0.5);', inp:'#180a0c' },
+  forest: { name:'Forest Altar', icon:'🌿', orb1:'#0a2010', orb2:'#061208', nav:'rgba(7,14,8,0.95)',
+    vars:'--bg:#070e08;--surface:#0c1410;--card:#101a12;--border:#1a2e1c;--border2:#2e5030;--gold:#c8a84a;--gd:#c8a84a12;--gs:#c8a84a35;--text:#ddeedd;--dim:#88aa88;--muted:#3a5a3c;--pro:#60c870;--pd:#60c87010;--ps:#60c87040;--red:#e06060;--green:#60d878;--amber:#d4a840;--shadow:0 2px 20px rgba(0,0,0,0.4);', inp:'#0c1410' },
+}
+type ThemeKey = keyof typeof THEMES
+
+const injectCSS = (theme: ThemeKey = 'ethereal') => {
+  if (typeof document === 'undefined') return
+  let s = document.getElementById('gi-css') as HTMLStyleElement | null
+  if (!s) { s = document.createElement('style'); s.id = 'gi-css'; document.head.appendChild(s) }
+  const t = THEMES[theme]
+  s.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Cinzel:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --bg:#f7f4ff;
-      --surface:#faf8ff;
-      --card:#ffffff;
-      --border:#e0d8f0;
-      --border2:#c8b8e8;
-      --gold:#8050b0;
-      --gd:#8050b010;
-      --gs:#8050b030;
-      --text:#2a1f4a;
-      --dim:#6a5888;
-      --muted:#a898c0;
-      --pro:#7c6af7;
-      --pd:#7c6af710;
-      --ps:#7c6af740;
-      --red:#c04060;
-      --green:#3a8a60;
-      --amber:#a07020;
-      --shadow:0 2px 16px rgba(120,80,180,0.08);
-    }
-    body{background:var(--bg);color:var(--text);font-family:'Cormorant Garamond',Georgia,serif;overflow-x:hidden}
+    :root{${t.vars}}
+    body{background:var(--bg);color:var(--text);font-family:'Cormorant Garamond',Georgia,serif;overflow-x:hidden;max-width:100vw}
     ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
     label.lbl{display:block;font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
-    .inp{background:#fff;border:1.5px solid var(--border);color:var(--text);font-family:'Cormorant Garamond',serif;font-size:15px;border-radius:9px;padding:10px 13px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s}
+    .inp{background:${t.inp};border:1.5px solid var(--border);color:var(--text);font-family:'Cormorant Garamond',serif;font-size:15px;border-radius:9px;padding:10px 13px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s}
     .inp:focus{border-color:var(--border2);box-shadow:0 0 0 3px var(--gd)}
     .inp::placeholder{color:var(--muted);font-style:italic}
     textarea.inp{resize:vertical;min-height:90px;line-height:1.8}
-    select.inp option{background:#fff;color:var(--text)}
-    .btn{cursor:pointer;border:none;border-radius:8px;font-family:'Cinzel',serif;font-size:10px;font-weight:600;padding:9px 16px;transition:all .2s;letter-spacing:1px;text-transform:uppercase}
-    .bg{background:linear-gradient(135deg,#c4a8e8,#9066c0);color:#fff;box-shadow:0 3px 14px rgba(144,102,192,0.25)}
+    select.inp option{background:var(--card);color:var(--text)}
+    .btn{cursor:pointer;border:none;border-radius:8px;font-family:'Cinzel',serif;font-size:10px;font-weight:600;padding:9px 16px;transition:all .2s;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+    .bg{background:linear-gradient(135deg,var(--gs),var(--gold));color:var(--bg);box-shadow:0 3px 14px var(--gs)}
     .bg:hover{opacity:.9;transform:translateY(-1px)}
-    .bgh{background:#fff;color:var(--dim);border:1.5px solid var(--border)}
+    .bgh{background:transparent;color:var(--dim);border:1.5px solid var(--border)}
     .bgh:hover{border-color:var(--border2);color:var(--gold)}
-    .bp{background:var(--pro);color:#fff;box-shadow:0 3px 14px rgba(124,106,247,0.25)}
+    .bp{background:var(--pro);color:#fff;box-shadow:0 3px 14px var(--ps)}
     .bp:hover{opacity:.9}
     .bsm{padding:6px 11px;font-size:9px}
     .btn:disabled{opacity:.5;cursor:not-allowed}
     .fade{animation:fadeUp .3s ease both}
     @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
     .card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
-    .ch{transition:border-color .2s,box-shadow .2s}
-    .ch:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(120,80,180,0.1)}
+    .ch{transition:border-color .2s}
+    .ch:hover{border-color:var(--border2)}
     .tag{display:inline-flex;align-items:center;background:var(--gd);color:var(--gold);font-size:12px;padding:3px 10px;border-radius:20px;font-family:'Cinzel',serif;letter-spacing:.3px;border:1px solid var(--gs)}
     .sec{font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
     .bar-track{background:var(--border);border-radius:4px;height:6px;overflow:hidden}
     .bar-fill{height:100%;border-radius:4px;transition:width .7s ease}
     .pro-tag{display:inline-flex;align-items:center;gap:3px;background:var(--pd);color:var(--pro);font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:20px;text-transform:uppercase;font-family:'Cinzel',serif;border:1px solid var(--ps)}
-    .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:0.25;pointer-events:none;z-index:0}
+    .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:0.18;pointer-events:none;z-index:0}
+    @media(max-width:640px){
+      .two-col{grid-template-columns:1fr!important}
+      .three-col{grid-template-columns:1fr 1fr!important}
+      .ritual-grid{grid-template-columns:1fr!important}
+      .ritual-detail{min-height:auto!important}
+      .form-three{grid-template-columns:1fr 1fr!important}
+      .form-dur{grid-template-columns:1fr!important}
+      .form-outcome{grid-template-columns:1fr!important}
+      .sigil-date-row{grid-template-columns:1fr 1fr!important}
+      .ai-suggestions{grid-template-columns:1fr!important}
+      .nav-moon{display:none!important}
+      .streak-num{font-size:52px!important}
+      .cal-day{min-height:48px!important;padding:4px 2px!important}
+      .cal-day-num{font-size:10px!important}
+    }
   `
-  document.head.appendChild(s)
 }
 
 /* Atoms */
@@ -229,11 +238,11 @@ function Dashboard({rituals,tarotLogs,isPro,onUpgrade}:{rituals:Ritual[];tarotLo
       {a.insight&&<div style={{background:"var(--gd)",border:"1.5px solid var(--gs)",borderRadius:12,padding:"14px 18px",marginBottom:14}}><div className="sec" style={{marginBottom:6}}>Pattern Insight</div><p style={{fontSize:16,color:"var(--text)",fontStyle:"italic",lineHeight:1.8}}>{a.insight}</p></div>}
       {a.predictiveWindow&&<div style={{background:"var(--pd)",border:"1.5px solid var(--ps)",borderRadius:12,padding:"14px 18px",marginBottom:14}}><div className="sec" style={{color:"var(--pro)",marginBottom:8}}>Your Optimal Ritual Window</div><div style={{display:"flex",gap:20,flexWrap:"wrap"}}><div><div className="sec" style={{marginBottom:3}}>Best Phase</div><div style={{color:"var(--pro)",fontFamily:"'Cinzel',serif",fontSize:14}}>{a.predictiveWindow.bestPhase}</div><div style={{fontSize:12,color:"var(--muted)",marginTop:1}}>in ~{a.predictiveWindow.daysAway} days</div></div><div><div className="sec" style={{marginBottom:3}}>Best Day</div><div style={{color:"var(--pro)",fontFamily:"'Cinzel',serif",fontSize:14}}>{a.predictiveWindow.bestDay}</div></div>{a.predictiveWindow.bestIngredient&&<div><div className="sec" style={{marginBottom:3}}>Top Ingredient</div><div style={{color:"var(--pro)",fontFamily:"'Cinzel',serif",fontSize:14,textTransform:"capitalize"}}>{a.predictiveWindow.bestIngredient}</div></div>}</div></div>}
       <div className="card" style={{padding:"14px 18px",marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div className="sec" style={{marginBottom:0}}>Dataset Confidence</div><ConfPill level={a.confidence}/></div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:12}}>{[["Phase Correlations",MIN_CORR],["Ingredient Lift",MIN_ING],["Predictive Windows",MIN_PRED]].map(([label,req])=><div key={label as string}><div className="sec" style={{marginBottom:6}}>{label}</div><PBar current={a.total} total={req as number} color={a.total>=(req as number)?"var(--green)":"var(--gold)"}/></div>)}</div></div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+      <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
         <div className="card" style={{padding:"16px 18px"}}><div className="sec">Moon Phase Effectiveness</div>{a.moonStats.length?a.moonStats.slice(0,6).map(({phase,avg,count})=><div key={phase} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:"var(--dim)"}}>{phase}</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:avg>=4?"var(--green)":avg>=3?"var(--amber)":"var(--muted)"}}>{avg} ({count})</span></div><div className="bar-track"><div className="bar-fill" style={{width:`${(avg/5)*100}%`,background:avg>=4?"var(--green)":avg>=3?"var(--amber)":"var(--muted)"}}/></div></div>):<div style={{fontSize:13,color:"var(--muted)",fontStyle:"italic"}}>Log rated rituals to unlock.</div>}</div>
         <div className="card" style={{padding:"16px 18px"}}><div className="sec">Ingredient Lift {a.total<MIN_ING&&<ConfPill level="building"/>}</div>{a.total<MIN_ING?<div style={{fontSize:13,color:"var(--muted)",fontStyle:"italic"}}>Unlocks after {MIN_ING} rated rituals ({a.total} so far).</div>:a.ingLifts.length?a.ingLifts.map((x:any)=><div key={x.ingredient} style={{marginBottom:9}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:13,color:"var(--dim)",textTransform:"capitalize"}}>{x.ingredient}</span><div style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--muted)"}}>w:{x.avgWith} w/o:{x.avgWithout??'n/a'}</span>{x.lift!==null&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:x.lift>0?"var(--green)":"var(--red)"}}>{x.lift>0?"+":""}{x.lift}</span>}</div></div><div className="bar-track"><div className="bar-fill" style={{width:`${(x.avgWith/5)*100}%`,background:x.lift&&x.lift>0?"var(--green)":x.lift&&x.lift<0?"var(--red)":"var(--pro)"}}/></div></div>):<div style={{fontSize:13,color:"var(--muted)",fontStyle:"italic"}}>Reuse ingredients across rituals to generate lift data.</div>}</div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+      <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
         <div className="card" style={{padding:"16px 18px"}}><div className="sec">Day of Week</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{a.dayStats.map(({day,avg,count})=><div key={day} style={{flex:"1 0 36px",textAlign:"center",padding:"9px 4px",borderRadius:8,background:avg>=4?"#3a8a6014":avg>=3?"var(--gd)":"var(--bg)",border:`1.5px solid ${avg>=4?"#3a8a6030":avg>=3?"var(--gs)":"var(--border)"}`}}><div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"var(--muted)"}}>{day}</div><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:avg>=4?"var(--green)":avg>=3?"var(--amber)":"var(--muted)",marginTop:3}}>{avg||"n/a"}</div><div style={{fontSize:9,color:"var(--muted)",marginTop:1}}>{count}r</div></div>)}</div></div>
         <div className="card" style={{padding:"16px 18px"}}><div className="sec">Intent Breakdown</div>{a.typeStats.length?a.typeStats.map(({type,avg,count})=><div key={type} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--border)"}}><span style={{fontSize:14,color:"var(--dim)"}}>{type}</span><div style={{display:"flex",gap:10,alignItems:"center"}}><span style={{color:"var(--muted)",fontSize:11}}>{count}x</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:avg>=4?"var(--green)":avg>=3?"var(--amber)":"var(--dim)"}}>{avg}/5</span></div></div>):<div style={{fontSize:13,color:"var(--muted)",fontStyle:"italic"}}>No rated rituals yet.</div>}</div>
       </div>
@@ -258,7 +267,7 @@ function RitualTab({rituals,addRitual,deleteRitual}:{rituals:Ritual[];addRitual:
   const save=async()=>{if(!draft.title.trim())return;setSaving(true);const{data}=await addRitual({...draft,manifestation_date:draft.manifestation_date||null});if(data)setActive(data.id);setComposing(false);setDraft(blank);setII("");setTI("");setSaving(false)}
   const iterate=(r:Ritual)=>{setDraft({...r,id:undefined,version:r.version+1,parent_id:r.id,success_rating:0,outcome_flag:"ongoing",manifestation_date:"",outcome:"",date:todayStr(),moon_phase:moon.name,planet_day:getPlanetDay()});setComposing(true)}
   return(
-    <div className="fade" style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:16,minHeight:480}}>
+    <div className="fade" className="ritual-grid" style={{display:"grid",gridTemplateColumns:"240px 1fr",gap:16,minHeight:480}}>
       {/* Sidebar list */}
       <div>
         <button className="btn bg" style={{width:"100%",marginBottom:12}} onClick={()=>{setDraft(blank);setComposing(true)}}>+ New Ritual</button>
@@ -288,7 +297,7 @@ function RitualTab({rituals,addRitual,deleteRitual}:{rituals:Ritual[];addRitual:
             <input className="inp" placeholder="Name this working..." value={draft.title} onChange={(e:any)=>setDraft((d:any)=>({...d,title:e.target.value}))} style={{fontSize:17}}/>
           </Field>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+          <div className="three-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
             <Field label="Intent Type">
               <select className="inp" value={draft.intent_type} onChange={(e:any)=>setDraft((d:any)=>({...d,intent_type:e.target.value}))}>{INTENT_TYPES.map(t=><option key={t}>{t}</option>)}</select>
             </Field>
@@ -300,7 +309,7 @@ function RitualTab({rituals,addRitual,deleteRitual}:{rituals:Ritual[];addRitual:
             </Field>
           </div>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             <Field label="Ingredients (press Enter to add)">
               <div style={{display:"flex",gap:8,marginBottom:8}}>
                 <input className="inp" placeholder="e.g. rosemary, black salt..." value={iI} onChange={(e:any)=>setII(e.target.value)} onKeyDown={(e:any)=>e.key==="Enter"&&(e.preventDefault(),addIng())}/>
@@ -406,7 +415,7 @@ function TarotTab({logs,addTarotLog,updateTarotLog,isPro,callAI}:{logs:TarotLog[
     <div className="fade">
       <div className="card" style={{padding:"20px 22px",marginBottom:16}}>
         <div className="sec">Record a Reading</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <Field label="Spread">
             <select className="inp" value={spread} onChange={(e:any)=>setSpread(e.target.value)}>{["Single Card","Three Card","Past-Present-Future","Celtic Cross","Yes / No","Horseshoe"].map(s=><option key={s}>{s}</option>)}</select>
           </Field>
@@ -468,7 +477,7 @@ function SigilTab({sigils,addSigil,updateSigil,deleteSigil}:{sigils:Sigil[];addS
       </div>
       {composing&&(
         <div className="fade card" style={{padding:"22px 24px",marginBottom:16,border:"1.5px solid var(--gs)"}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
             <Field label="Name"><input className="inp" placeholder="Name this sigil..." value={form.name} onChange={(e:any)=>setForm(f=>({...f,name:e.target.value}))}/></Field>
             <Field label="Intent"><input className="inp" placeholder="What is it working for?" value={form.intent} onChange={(e:any)=>setForm(f=>({...f,intent:e.target.value}))}/></Field>
           </div>
@@ -533,7 +542,7 @@ function AITab({rituals,tarotLogs,sigils,isPro,callAI,onUpgrade}:{rituals:Ritual
           </div>
         ))}
         {loading&&<div style={{display:"flex",flexDirection:"column",alignItems:"flex-start"}}><div style={{fontFamily:"'Cinzel',serif",fontSize:9,color:"var(--gold)",letterSpacing:1.5,marginBottom:3}}>Counsel</div><div style={{padding:"13px 17px",borderRadius:"14px 14px 14px 4px",background:"var(--card)",border:"1.5px solid var(--border)"}}><div style={{display:"flex",gap:5,alignItems:"center"}}>{[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:"var(--border)",animation:"pulse 1.2s ease infinite",animationDelay:`${i*.2}s`}}/>)}</div></div></div>}
-        {messages.length===1&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:8,marginTop:6}}>
+        {messages.length===1&&<div className="ai-suggestions" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:8,marginTop:6}}>
           {["What patterns do you see in my most successful rituals?","Plan a ritual based on what has worked for me","Which ingredients show genuine lift in my records?","What does my tarot pattern suggest?"].map(s=><button key={s} onClick={()=>setInput(s)} style={{background:"var(--card)",border:"1.5px solid var(--border)",borderRadius:10,padding:"11px 14px",cursor:"pointer",color:"var(--dim)",fontSize:13,fontStyle:"italic",textAlign:"left",transition:"all .2s",fontFamily:"'Cormorant Garamond',serif",lineHeight:1.6}} onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="var(--border2)";(e.currentTarget as HTMLElement).style.color="var(--gold)"}} onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="var(--border)";(e.currentTarget as HTMLElement).style.color="var(--dim)"}}>{s}</button>)}
         </div>}
         <div ref={bottomRef}/>
@@ -572,35 +581,58 @@ function ProModal({onClose,onUpgrade}:{onClose:()=>void;onUpgrade:()=>void}){
 
 /* Root */
 export default function GrimoireUI({user,isPro,rituals,tarotLogs,sigils,addRitual,deleteRitual,addTarotLog,updateTarotLog,addSigil,updateSigil,deleteSigil,callAI,onSignOut}:Props){
-  useEffect(()=>{injectCSS()},[])
+  const [theme,setTheme]=useState<ThemeKey>(()=>{
+    if(typeof localStorage!=='undefined'){const s=localStorage.getItem('gm-theme') as ThemeKey;if(s&&THEMES[s])return s}
+    return 'midnight'
+  })
+  useEffect(()=>{injectCSS(theme);if(typeof localStorage!=='undefined')localStorage.setItem('gm-theme',theme)},[theme])
   const [tab,setTab]=useState("dashboard")
   const [showModal,setShowModal]=useState(false)
+  const [showThemes,setShowThemes]=useState(false)
   const moon=getMoonPhase();const pH=getPlanetaryHour()
+  const T=THEMES[theme]
   const TABS=[{id:"dashboard",icon:"📊",label:"Intelligence",pro:true},{id:"rituals",icon:"📖",label:"Rituals"},{id:"tarot",icon:"🃏",label:"Tarot"},{id:"sigils",icon:"⊕",label:"Sigils"},{id:"ai",icon:"✦",label:"Counsel",pro:true},{id:"streak",icon:"🔥",label:"Streak"},{id:"calendar",icon:"🌒",label:"Calendar"},{id:"planner",icon:"🔮",label:"Planner",pro:true},{id:"encyclopedia",icon:"🌿",label:"Ingredients"}]
   const onUpgrade=async()=>{setShowModal(false);alert("Payments coming soon. Everything is free during early access.")}
   return(
-    <div style={{minHeight:"100vh",background:"var(--bg)"}}>
-      <div className="orb" style={{width:500,height:500,background:"#d4b8f0",top:"-150px",left:"-150px"}}/>
-      <div className="orb" style={{width:350,height:350,background:"#f0d4f8",bottom:"-100px",right:"-80px"}}/>
-      <div style={{position:"sticky",top:0,zIndex:100,background:"rgba(250,248,255,0.92)",borderBottom:"1.5px solid var(--border)",backdropFilter:"blur(16px)"}}>
-        <div style={{maxWidth:960,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",height:54}}>
-          <span style={{fontFamily:"'Cinzel',serif",fontSize:17,color:"var(--gold)",letterSpacing:.3}}>Grimoire</span>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
+    <div style={{minHeight:"100vh",background:"var(--bg)",maxWidth:"100vw",overflowX:"hidden"}}>
+      <div className="orb" style={{width:500,height:500,background:T.orb1,top:"-150px",left:"-150px"}}/>
+      <div className="orb" style={{width:350,height:350,background:T.orb2,bottom:"-100px",right:"-80px"}}/>
+      {/* Navbar */}
+      <div style={{position:"sticky",top:0,zIndex:100,background:T.nav,borderBottom:"1.5px solid var(--border)",backdropFilter:"blur(16px)"}}>
+        <div style={{maxWidth:960,margin:"0 auto",padding:"0 14px",display:"flex",alignItems:"center",justifyContent:"space-between",height:54,gap:8}}>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:16,color:"var(--gold)",letterSpacing:.3,flexShrink:0}}>Grimoire</span>
+          {/* Moon info - hidden on small screens via inline style workaround */}
+          <div className="nav-moon" style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
             <span style={{fontSize:14}}>{moon.symbol}</span>
-            <span style={{fontSize:11,color:"var(--muted)",fontFamily:"'Cinzel',serif",letterSpacing:.4}}>{moon.name}</span>
-            <span style={{width:1,height:16,background:"var(--border)",display:"inline-block"}}/>
-            <span style={{fontSize:11,color:PLANET_COLORS[pH.planet],fontFamily:"'Cinzel',serif"}}>{pH.planet} hr</span>
+            <span style={{fontSize:11,color:"var(--muted)",fontFamily:"'Cinzel',serif"}}>{moon.name}</span>
+            <span style={{width:1,height:14,background:"var(--border)",display:"inline-block"}}/>
+            <span style={{fontSize:11,color:PLANET_COLORS[pH.planet],fontFamily:"'Cinzel',serif"}}>{pH.planet}</span>
           </div>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            {!isPro?<button className="btn bp" style={{fontSize:9,padding:"5px 12px"}} onClick={()=>setShowModal(true)}>Intelligence</button>:<span className="pro-tag">Intelligence</span>}
-            <button className="btn bgh" style={{fontSize:9,padding:"5px 10px"}} onClick={onSignOut}>Sign out</button>
+          {/* Right controls */}
+          <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0,position:"relative"}}>
+            {/* Theme switcher */}
+            <button className="btn bgh bsm" style={{fontSize:13,padding:"5px 9px"}} onClick={()=>setShowThemes(v=>!v)} title="Change theme">{T.icon}</button>
+            {showThemes&&<div onClick={()=>setShowThemes(false)} style={{position:"fixed",inset:0,zIndex:199}}/>}
+            {showThemes&&(
+              <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,zIndex:200,background:"var(--card)",border:"1.5px solid var(--border2)",borderRadius:12,padding:8,display:"flex",flexDirection:"column",gap:4,minWidth:160,boxShadow:"var(--shadow)"}}>
+                {(Object.entries(THEMES) as [ThemeKey,typeof THEMES[ThemeKey]][]).map(([key,th])=>(
+                  <button key={key} onClick={()=>{setTheme(key);setShowThemes(false)}} style={{background:theme===key?"var(--gd)":"transparent",border:`1.5px solid ${theme===key?"var(--gs)":"transparent"}`,borderRadius:8,padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontFamily:"'Cinzel',serif",fontSize:11,color:theme===key?"var(--gold)":"var(--dim)",textAlign:"left",letterSpacing:.5}}>
+                    <span style={{fontSize:16}}>{th.icon}</span>{th.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!isPro?<button className="btn bp bsm" onClick={()=>setShowModal(true)}>Pro</button>:<span className="pro-tag">Pro</span>}
+            <button className="btn bgh bsm" onClick={onSignOut}>Out</button>
           </div>
         </div>
-        <div style={{maxWidth:960,margin:"0 auto",padding:"0 16px",display:"flex",overflowX:"auto"}}>
-          {TABS.map(t=><button key={t.id} onClick={()=>{if(t.pro&&!isPro){setShowModal(true);return}setTab(t.id)}} style={{background:"none",border:"none",cursor:"pointer",padding:"10px 16px",fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:.8,textTransform:"uppercase",color:tab===t.id?"var(--gold)":"var(--muted)",borderBottom:`2px solid ${tab===t.id?"var(--gold)":"transparent"}`,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5,transition:"color .2s"}}>{t.icon} {t.label}</button>)}
+        {/* Tab bar */}
+        <div style={{maxWidth:960,margin:"0 auto",padding:"0 8px",display:"flex",overflowX:"auto",scrollbarWidth:"none"}}>
+          {TABS.map(t=><button key={t.id} onClick={()=>{if(t.pro&&!isPro){setShowModal(true);return}setTab(t.id)}} style={{background:"none",border:"none",cursor:"pointer",padding:"9px 10px",fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:.6,textTransform:"uppercase",color:tab===t.id?"var(--gold)":"var(--muted)",borderBottom:`2px solid ${tab===t.id?"var(--gold)":"transparent"}`,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4,transition:"color .2s",flexShrink:0}}>{t.icon} {t.label}</button>)}
         </div>
       </div>
-      <div style={{maxWidth:960,margin:"0 auto",padding:"24px 20px",position:"relative",zIndex:1}}>
+      {/* Content */}
+      <div style={{maxWidth:960,margin:"0 auto",padding:"20px 14px",position:"relative",zIndex:1,width:"100%",boxSizing:"border-box"}}>
         {tab==="dashboard"&&<Dashboard rituals={rituals} tarotLogs={tarotLogs} isPro={isPro} onUpgrade={()=>setShowModal(true)}/>}
         {tab==="rituals"&&<RitualTab rituals={rituals} addRitual={addRitual} deleteRitual={deleteRitual}/>}
         {tab==="tarot"&&<TarotTab logs={tarotLogs} addTarotLog={addTarotLog} updateTarotLog={updateTarotLog} isPro={isPro} callAI={callAI}/>}
@@ -767,8 +799,8 @@ function MoonCalendarTab({ rituals }: { rituals: Ritual[] }) {
             const isToday = ds === todayDs
             const avgRating = dayRituals.length ? dayRituals.reduce((a,r) => a + r.success_rating, 0) / dayRituals.length : 0
             return (
-              <div key={day} style={{ borderRadius: 10, border: `1.5px solid ${isToday ? 'var(--gs)' : dayRituals.length ? 'rgba(160,100,220,0.2)' : 'var(--border)'}`, background: isToday ? 'var(--gd)' : dayRituals.length ? 'rgba(160,100,220,0.04)' : 'transparent', padding: '6px 4px', minHeight: 64, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: isToday ? 'var(--gold)' : 'var(--dim)', fontWeight: isToday ? 600 : 400 }}>{day}</div>
+              <div key={day} className="cal-day" style={{ borderRadius: 10, border: `1.5px solid ${isToday ? 'var(--gs)' : dayRituals.length ? 'rgba(160,100,220,0.2)' : 'var(--border)'}`, background: isToday ? 'var(--gd)' : dayRituals.length ? 'rgba(160,100,220,0.04)' : 'transparent', padding: '6px 4px', minHeight: 64, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <div className="cal-day-num" style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: isToday ? 'var(--gold)' : 'var(--dim)', fontWeight: isToday ? 600 : 400 }}>{day}</div>
                 <div style={{ fontSize: 14 }} title={moon.name}>{moon.symbol}</div>
                 {dayRituals.length > 0 && (
                   <>
