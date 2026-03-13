@@ -379,11 +379,19 @@ function ProModal({onClose,onUpgrade}:{onClose:()=>void;onUpgrade:()=>void}){
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"#00000099",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(8px)"}}>
       <div onClick={(e:any)=>e.stopPropagation()} style={{background:"var(--surface)",border:"1.5px solid var(--ps)",borderRadius:18,padding:"32px 28px",maxWidth:400,width:"100%",boxShadow:"0 0 60px var(--pd)"}}>
-        <div style={{textAlign:"center",marginBottom:22}}><div style={{fontSize:32,marginBottom:8}}>✦</div><h3 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:20,color:"var(--pro)",marginBottom:8}}>Practice Intelligence</h3><p style={{color:"var(--dim)",fontSize:13,fontStyle:"italic",lineHeight:1.7}}>Your grimoire becomes a pattern-recognition system.</p></div>
-        <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:3,marginBottom:22}}><span style={{fontFamily:"'Cinzel Decorative',serif",fontSize:38,color:"var(--text)"}}></div>
-        {["Moon phase & ingredient correlation analytics (proper lift math)","Manifestation timeline — how fast your workings deliver","Predictive optimal windows from your personal history","AI counsel that reads your record, not a textbook","Tarot pattern analysis"].map(f=><div key={f} style={{display:"flex",gap:8,marginBottom:9,fontSize:13,color:"var(--dim)",alignItems:"flex-start"}}><span style={{color:"var(--gold)",flexShrink:0}}>✦</span>{f}</div>)}
-        <div style={{display:"flex",gap:8,marginTop:24}}><button className="btn bgh" style={{flex:1}} onClick={onClose}>Not yet</button><button className="btn bp" style={{flex:2,fontSize:12,padding:"11px"}} onClick={onUpgrade}>Everything is free during early access ✦</button></div>
-        <p style={{textAlign:"center",fontSize:10,color:"var(--muted)",marginTop:10,fontStyle:"italic"}}>Cancel any time</p>
+        <div style={{textAlign:"center",marginBottom:22}}>
+          <div style={{fontSize:32,marginBottom:8}}>✦</div>
+          <h3 style={{fontFamily:"'Cinzel Decorative',serif",fontSize:20,color:"var(--pro)",marginBottom:8}}>Practice Intelligence</h3>
+          <p style={{color:"var(--dim)",fontSize:13,fontStyle:"italic",lineHeight:1.7}}>Your grimoire becomes a pattern-recognition system.</p>
+        </div>
+        <div style={{background:"var(--gd)",border:"1px solid var(--gs)",borderRadius:10,padding:"12px 16px",marginBottom:20,textAlign:"center"}}>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:11,color:"var(--gold)",letterSpacing:1}}>FREE DURING EARLY ACCESS</span>
+        </div>
+        {["Moon phase & ingredient correlation analytics","Manifestation timeline — how fast your workings deliver","Predictive optimal windows from your personal history","AI counsel that reads your record, not a textbook","Tarot pattern analysis"].map(f=><div key={f} style={{display:"flex",gap:8,marginBottom:9,fontSize:13,color:"var(--dim)",alignItems:"flex-start"}}><span style={{color:"var(--gold)",flexShrink:0}}>✦</span>{f}</div>)}
+        <div style={{display:"flex",gap:8,marginTop:24}}>
+          <button className="btn bgh" style={{flex:1}} onClick={onClose}>Close</button>
+          <button className="btn bp" style={{flex:2,fontSize:11,padding:"11px"}} onClick={onUpgrade}>Enter the Grimoire ✦</button>
+        </div>
       </div>
     </div>
   )
