@@ -576,7 +576,7 @@ export default function GrimoireUI({user,isPro,rituals,tarotLogs,sigils,addRitua
   const [tab,setTab]=useState("dashboard")
   const [showModal,setShowModal]=useState(false)
   const moon=getMoonPhase();const pH=getPlanetaryHour()
-  const TABS=[{id:"dashboard",icon:"📊",label:"Intelligence",pro:true},{id:"rituals",icon:"📖",label:"Rituals"},{id:"tarot",icon:"🃏",label:"Tarot"},{id:"sigils",icon:"⊕",label:"Sigils"},{id:"ai",icon:"✦",label:"Counsel",pro:true}]
+  const TABS=[{id:"dashboard",icon:"📊",label:"Intelligence",pro:true},{id:"rituals",icon:"📖",label:"Rituals"},{id:"tarot",icon:"🃏",label:"Tarot"},{id:"sigils",icon:"⊕",label:"Sigils"},{id:"ai",icon:"✦",label:"Counsel",pro:true},{id:"streak",icon:"🔥",label:"Streak"},{id:"calendar",icon:"🌒",label:"Calendar"},{id:"planner",icon:"🔮",label:"Planner",pro:true},{id:"encyclopedia",icon:"🌿",label:"Ingredients"}]
   const onUpgrade=async()=>{setShowModal(false);alert("Payments coming soon. Everything is free during early access.")}
   return(
     <div style={{minHeight:"100vh",background:"var(--bg)"}}>
@@ -606,8 +606,369 @@ export default function GrimoireUI({user,isPro,rituals,tarotLogs,sigils,addRitua
         {tab==="tarot"&&<TarotTab logs={tarotLogs} addTarotLog={addTarotLog} updateTarotLog={updateTarotLog} isPro={isPro} callAI={callAI}/>}
         {tab==="sigils"&&<SigilTab sigils={sigils} addSigil={addSigil} updateSigil={updateSigil} deleteSigil={deleteSigil}/>}
         {tab==="ai"&&<AITab rituals={rituals} tarotLogs={tarotLogs} sigils={sigils} isPro={isPro} callAI={callAI} onUpgrade={()=>setShowModal(true)}/>}
+        {tab==="streak"&&<StreakTab rituals={rituals}/>}
+        {tab==="calendar"&&<MoonCalendarTab rituals={rituals}/>}
+        {tab==="planner"&&<PlannerTab rituals={rituals} callAI={callAI} isPro={isPro} onUpgrade={()=>setShowModal(true)}/>}
+        {tab==="encyclopedia"&&<EncyclopediaTab rituals={rituals}/>}
       </div>
       {showModal&&<ProModal onClose={()=>setShowModal(false)} onUpgrade={onUpgrade}/>}
+    </div>
+  )
+}
+
+/* ── STREAK TRACKER ─────────────────────────── */
+function getStreak(rituals: Ritual[]): { current: number; longest: number; lastSeven: boolean[] } {
+  if (!rituals.length) return { current: 0, longest: 0, lastSeven: Array(7).fill(false) }
+  const dates = new Set(rituals.map(r => r.date))
+  const today = new Date(); today.setHours(0,0,0,0)
+  let current = 0, longest = 0, streak = 0
+  // Walk backwards from today
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i)
+    const ds = d.toISOString().slice(0,10)
+    if (dates.has(ds)) { streak++; if (i === 0 || i === streak - 1) current = streak; longest = Math.max(longest, streak) }
+    else { if (i > 0) break; streak = 0 }
+  }
+  const lastSeven = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today); d.setDate(d.getDate() - (6 - i))
+    return dates.has(d.toISOString().slice(0,10))
+  })
+  return { current, longest, lastSeven }
+}
+
+function StreakTab({ rituals }: { rituals: Ritual[] }) {
+  const { current, longest, lastSeven } = getStreak(rituals)
+  const totalDays = new Set(rituals.map(r => r.date)).size
+  const thisMonth = rituals.filter(r => r.date.slice(0,7) === todayStr().slice(0,7)).length
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const today = new Date()
+
+  // Build last 90 days heatmap
+  const heatmap = Array.from({ length: 90 }, (_, i) => {
+    const d = new Date(today); d.setDate(d.getDate() - (89 - i))
+    const ds = d.toISOString().slice(0, 10)
+    const count = rituals.filter(r => r.date === ds).length
+    return { ds, count, day: d.getDay() }
+  })
+
+  return (
+    <div className="fade">
+      {/* Streak hero */}
+      <div className="card" style={{ padding: '32px 28px', marginBottom: 16, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)', fontSize: 180, opacity: 0.04, lineHeight: 1 }}>🔥</div>
+        <div style={{ fontSize: 80, marginBottom: 8, filter: current >= 7 ? 'drop-shadow(0 0 20px rgba(255,140,0,0.4))' : undefined }}>
+          {current >= 30 ? '🔥🔥🔥' : current >= 14 ? '🔥🔥' : current >= 3 ? '🔥' : '☽'}
+        </div>
+        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 64, color: current >= 7 ? '#c8840a' : 'var(--gold)', lineHeight: 1, marginBottom: 4 }}>{current}</div>
+        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: 'var(--muted)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 24 }}>
+          {current === 1 ? 'Day Streak' : 'Day Streak'}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 32 }}>
+          {[['Longest', longest + ' days'], ['This Month', thisMonth + ' rituals'], ['Total Days', totalDays + ' days']].map(([l, v]) => (
+            <div key={l}>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: 'var(--muted)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>{l}</div>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 18, color: 'var(--gold)' }}>{v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Last 7 days */}
+      <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
+        <div className="sec">Last 7 Days</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {lastSeven.map((active, i) => {
+            const d = new Date(today); d.setDate(d.getDate() - (6 - i))
+            return (
+              <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, color: 'var(--muted)', marginBottom: 6 }}>{DAYS[d.getDay()]}</div>
+                <div style={{ width: '100%', paddingBottom: '100%', position: 'relative' }}>
+                  <div style={{ position: 'absolute', inset: 0, borderRadius: 8, background: active ? 'linear-gradient(135deg, #c4a8e8, #9066c0)' : 'var(--bg)', border: `1.5px solid ${active ? 'var(--gs)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                    {active ? '✦' : ''}
+                  </div>
+                </div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: 'var(--muted)', marginTop: 6 }}>{d.getDate()}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 90-day heatmap */}
+      <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
+        <div className="sec">90 Day Practice Map</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {heatmap.map(({ ds, count }) => (
+            <div key={ds} title={`${ds}: ${count} ritual${count !== 1 ? 's' : ''}`} style={{ width: 14, height: 14, borderRadius: 3, background: count === 0 ? 'var(--bg)' : count === 1 ? 'rgba(160,100,220,0.4)' : count === 2 ? 'rgba(160,100,220,0.7)' : 'rgba(160,100,220,1)', border: '1px solid var(--border)', transition: 'transform 0.1s', cursor: 'default' }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>Less</span>
+          {[0, 0.4, 0.7, 1].map(op => <div key={op} style={{ width: 12, height: 12, borderRadius: 3, background: op === 0 ? 'var(--bg)' : `rgba(160,100,220,${op})`, border: '1px solid var(--border)' }} />)}
+          <span style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>More</span>
+        </div>
+      </div>
+
+      {/* Motivation */}
+      {current === 0 && (
+        <div style={{ background: 'var(--gd)', border: '1.5px solid var(--gs)', borderRadius: 12, padding: '16px 20px', textAlign: 'center' }}>
+          <p style={{ fontSize: 15, color: 'var(--dim)', fontStyle: 'italic', lineHeight: 1.8 }}>No ritual logged today. Log one now to begin your streak.</p>
+        </div>
+      )}
+      {current >= 7 && (
+        <div style={{ background: 'rgba(200,132,10,0.08)', border: '1.5px solid rgba(200,132,10,0.25)', borderRadius: 12, padding: '16px 20px', textAlign: 'center' }}>
+          <p style={{ fontSize: 15, color: '#c8840a', fontStyle: 'italic', lineHeight: 1.8 }}>A {current}-day streak. Your practice is building real momentum.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── MOON CALENDAR ───────────────────────────── */
+function MoonCalendarTab({ rituals }: { rituals: Ritual[] }) {
+  const [viewDate, setViewDate] = useState(new Date())
+  const year = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+  const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const ritualsByDate: Record<string, Ritual[]> = {}
+  rituals.forEach(r => { if (!ritualsByDate[r.date]) ritualsByDate[r.date] = []; ritualsByDate[r.date].push(r) })
+  const todayDs = todayStr()
+
+  const prev = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+  const next = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+
+  return (
+    <div className="fade">
+      <div className="card" style={{ padding: '20px 24px' }}>
+        {/* Nav */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <button className="btn bgh bsm" onClick={prev}>Prev</button>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 16, color: 'var(--gold)' }}>{monthName}</div>
+          <button className="btn bgh bsm" onClick={next}>Next</button>
+        </div>
+
+        {/* Day headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
+          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+            <div key={d} style={{ textAlign: 'center', fontFamily: "'Cinzel', serif", fontSize: 9, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', padding: '4px 0' }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+          {Array.from({ length: firstDay }, (_, i) => <div key={`e${i}`} />)}
+          {Array.from({ length: daysInMonth }, (_, i) => {
+            const day = i + 1
+            const ds = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+            const dayRituals = ritualsByDate[ds] || []
+            const moon = getMoonPhase(new Date(year, month, day))
+            const isToday = ds === todayDs
+            const avgRating = dayRituals.length ? dayRituals.reduce((a,r) => a + r.success_rating, 0) / dayRituals.length : 0
+            return (
+              <div key={day} style={{ borderRadius: 10, border: `1.5px solid ${isToday ? 'var(--gs)' : dayRituals.length ? 'rgba(160,100,220,0.2)' : 'var(--border)'}`, background: isToday ? 'var(--gd)' : dayRituals.length ? 'rgba(160,100,220,0.04)' : 'transparent', padding: '6px 4px', minHeight: 64, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: isToday ? 'var(--gold)' : 'var(--dim)', fontWeight: isToday ? 600 : 400 }}>{day}</div>
+                <div style={{ fontSize: 14 }} title={moon.name}>{moon.symbol}</div>
+                {dayRituals.length > 0 && (
+                  <>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: avgRating >= 4 ? 'var(--green)' : avgRating >= 3 ? 'var(--amber)' : 'var(--muted)' }} title={`${dayRituals.length} ritual${dayRituals.length > 1 ? 's' : ''}`} />
+                    {dayRituals.length > 1 && <div style={{ fontFamily: "'Cinzel', serif", fontSize: 8, color: 'var(--muted)' }}>{dayRituals.length}</div>}
+                  </>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+          {[['var(--green)', 'High success (4-5)'], ['var(--amber)', 'Mid success (3)'], ['var(--muted)', 'Low success (1-2)']].map(([c, l]) => (
+            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
+              <span style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>{l}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Rituals this month */}
+      {rituals.filter(r => r.date.startsWith(`${year}-${String(month + 1).padStart(2,'0')}`)).length > 0 && (
+        <div className="card" style={{ marginTop: 14, padding: '20px 24px' }}>
+          <div className="sec">This Month</div>
+          {rituals.filter(r => r.date.startsWith(`${year}-${String(month + 1).padStart(2,'0')}`)).map(r => (
+            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+              <div>
+                <div style={{ fontSize: 14, color: 'var(--text)' }}>{r.title}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>{r.date} · {r.moon_phase}</div>
+              </div>
+              {r.success_rating > 0 && <Stars value={r.success_rating} size={13} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── PRE-RITUAL PLANNER ─────────────────────── */
+function PlannerTab({ rituals, callAI, isPro, onUpgrade }: { rituals: Ritual[]; callAI: (m: any[], s: string) => Promise<string>; isPro: boolean; onUpgrade: () => void }) {
+  const [intent, setIntent] = useState('Abundance')
+  const [loading, setLoading] = useState(false)
+  const [plan, setPlan] = useState<string | null>(null)
+  const a = buildAnalytics(rituals)
+
+  const buildPlan = async () => {
+    setLoading(true); setPlan(null)
+    const bestPhase = a.moonStats[0]?.phase || 'Full Moon'
+    const bestDay = [...a.dayStats].sort((x, y) => y.avg - x.avg)[0]?.day || 'Friday'
+    const bestIngs = a.ingLifts.slice(0, 4).map((x: any) => x.ingredient).join(', ') || 'not enough data yet'
+    const daysAway = daysToNextPhase(bestPhase)
+    const typeData = a.typeStats.find(t => t.type === intent)
+    const prompt = `Based on this practitioner's actual ritual data, create a specific pre-ritual plan for a ${intent} working.
+
+THEIR DATA:
+- Best moon phase overall: ${bestPhase} (avg ${a.moonStats[0]?.avg || 'unknown'}/5), next in ~${daysAway} days
+- Best day of week: ${bestDay}
+- Top performing ingredients in their practice: ${bestIngs}
+- Their ${intent} workings: ${typeData ? `${typeData.count} performed, avg ${typeData.avg}/5` : 'none yet'}
+- Overall avg success: ${a.overallAvg}/5 from ${a.total} rated rituals
+- Avg days to manifestation: ${a.avgManifestDays ?? 'unknown'}
+
+Write a concrete ritual plan: optimal timing, recommended ingredients from their history, suggested duration, and preparation notes. Be specific. Under 200 words.`
+
+    const result = await callAI([{ role: 'user', content: prompt }], 'You are a practical magical advisor. Give actionable, specific plans based on the data provided. No fluff.')
+    setPlan(result)
+    setLoading(false)
+  }
+
+  if (!isPro) return (
+    <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 380, textAlign: 'center' }}>
+      <div style={{ fontSize: 32, marginBottom: 12 }}>🔮</div>
+      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 17, color: 'var(--pro)', marginBottom: 12 }}>Pre-Ritual Planner</div>
+      <p style={{ color: 'var(--dim)', fontSize: 15, fontStyle: 'italic', maxWidth: 360, lineHeight: 1.8, marginBottom: 20 }}>Tell the system what you want to work toward. It recommends the optimal timing and ingredients from your own history.</p>
+      <button className="btn bp" style={{ fontSize: 11, padding: '10px 24px' }} onClick={onUpgrade}>Unlock Pro</button>
+    </div>
+  )
+
+  return (
+    <div className="fade">
+      <div className="card" style={{ padding: '24px 28px', marginBottom: 16 }}>
+        <div className="sec">What do you want to work toward?</div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+          {['Protection','Abundance','Love','Healing','Banishing','Wisdom','Divination','Binding','Uncrossing'].map(t => (
+            <button key={t} onClick={() => { setIntent(t); setPlan(null) }} style={{ padding: '9px 18px', borderRadius: 20, border: `1.5px solid ${intent === t ? 'var(--gs)' : 'var(--border)'}`, background: intent === t ? 'var(--gd)' : 'transparent', color: intent === t ? 'var(--gold)' : 'var(--muted)', fontFamily: "'Cinzel', serif", fontSize: 11, cursor: 'pointer', transition: 'all 0.2s', letterSpacing: 0.5 }}>{t}</button>
+          ))}
+        </div>
+        <button className="btn bg" onClick={buildPlan} disabled={loading || rituals.length < 3}>
+          {loading ? 'Building plan...' : 'Generate Optimal Plan'}
+        </button>
+        {rituals.length < 3 && <p style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>Log at least 3 rituals for the planner to have data to work from.</p>}
+      </div>
+
+      {/* Data preview */}
+      {a.total > 0 && !plan && !loading && (
+        <div className="card" style={{ padding: '20px 24px', marginBottom: 16 }}>
+          <div className="sec">Your Data for {intent} Workings</div>
+          {(() => { const t = a.typeStats.find(x => x.type === intent); return t ? <p style={{ fontSize: 14, color: 'var(--dim)', fontStyle: 'italic' }}>{t.count} {intent} rituals logged, avg {t.avg}/5 success rating.</p> : <p style={{ fontSize: 14, color: 'var(--muted)', fontStyle: 'italic' }}>No {intent} rituals logged yet. The plan will use your general best conditions.</p> })()}
+          {a.moonStats[0] && <p style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic', marginTop: 8 }}>Best phase overall: {a.moonStats[0].phase}, next in ~{daysToNextPhase(a.moonStats[0].phase)} days.</p>}
+        </div>
+      )}
+
+      {loading && (
+        <div className="card" style={{ padding: '24px 28px', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 5 }}>{[0,1,2].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', opacity: 0.6, animation: `pulse 1.2s ease ${i * 0.2}s infinite` }} />)}</div>
+          <span style={{ fontSize: 14, color: 'var(--muted)', fontStyle: 'italic' }}>Analysing your records...</span>
+        </div>
+      )}
+
+      {plan && (
+        <div className="fade card" style={{ padding: '24px 28px', border: '1.5px solid var(--gs)', background: 'var(--gd)' }}>
+          <div className="sec" style={{ marginBottom: 12 }}>Your {intent} Plan</div>
+          <p style={{ fontSize: 15, color: 'var(--text)', fontStyle: 'italic', lineHeight: 2, whiteSpace: 'pre-wrap' }}>{plan}</p>
+          <button className="btn bgh" style={{ marginTop: 16 }} onClick={() => setPlan(null)}>Build Another</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── INGREDIENT ENCYCLOPEDIA ────────────────── */
+function EncyclopediaTab({ rituals }: { rituals: Ritual[] }) {
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<'alpha' | 'uses' | 'lift'>('lift')
+
+  const ingMap: Record<string, { uses: number; ratings: number[]; ritualTitles: string[]; intentTypes: string[] }> = {}
+  rituals.forEach(r => {
+    (r.ingredients || []).forEach(raw => {
+      const k = raw.toLowerCase().trim()
+      if (!k) return
+      if (!ingMap[k]) ingMap[k] = { uses: 0, ratings: [], ritualTitles: [], intentTypes: [] }
+      ingMap[k].uses++
+      if (r.success_rating > 0) ingMap[k].ratings.push(r.success_rating)
+      if (!ingMap[k].ritualTitles.includes(r.title)) ingMap[k].ritualTitles.push(r.title)
+      if (!ingMap[k].intentTypes.includes(r.intent_type)) ingMap[k].intentTypes.push(r.intent_type)
+    })
+  })
+
+  const allIngs = Object.entries(ingMap).map(([name, data]) => {
+    const avg = data.ratings.length ? +(data.ratings.reduce((a,b) => a+b, 0) / data.ratings.length).toFixed(2) : null
+    const liftVal = ingLift(rituals, name)
+    return { name, uses: data.uses, avg, lift: liftVal?.lift ?? null, ritualTitles: data.ritualTitles, intentTypes: data.intentTypes, ratingCount: data.ratings.length }
+  })
+
+  const filtered = allIngs
+    .filter(i => i.name.includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sort === 'alpha') return a.name.localeCompare(b.name)
+      if (sort === 'uses') return b.uses - a.uses
+      return (b.lift ?? b.avg ?? 0) - (a.lift ?? a.avg ?? 0)
+    })
+
+  return (
+    <div className="fade">
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input className="inp" placeholder="Search ingredients..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
+        <div style={{ display: 'flex', gap: 6 }}>
+          {(['lift','uses','alpha'] as const).map(s => (
+            <button key={s} className="btn bgh bsm" onClick={() => setSort(s)} style={{ background: sort === s ? 'var(--gd)' : undefined, borderColor: sort === s ? 'var(--gs)' : undefined, color: sort === s ? 'var(--gold)' : undefined }}>
+              {s === 'lift' ? 'By Lift' : s === 'uses' ? 'By Uses' : 'A-Z'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🌿</div>
+          <p style={{ fontSize: 14, color: 'var(--muted)', fontStyle: 'italic' }}>No ingredients found. Add them when logging rituals.</p>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+        {filtered.map(ing => (
+          <div key={ing.name} className="card ch" style={{ padding: '18px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: 'var(--text)', textTransform: 'capitalize' }}>{ing.name}</div>
+              {ing.lift !== null && (
+                <span style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: ing.lift > 0 ? 'var(--green)' : ing.lift < 0 ? 'var(--red)' : 'var(--muted)', background: ing.lift > 0 ? 'rgba(58,138,96,0.1)' : ing.lift < 0 ? 'rgba(192,64,96,0.1)' : 'var(--bg)', padding: '2px 8px', borderRadius: 20, border: `1px solid ${ing.lift > 0 ? 'rgba(58,138,96,0.3)' : ing.lift < 0 ? 'rgba(192,64,96,0.3)' : 'var(--border)'}` }}>
+                  {ing.lift > 0 ? '+' : ''}{ing.lift}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+              <div><div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>Uses</div><div style={{ fontFamily: "'Cinzel', serif", fontSize: 16, color: 'var(--gold)' }}>{ing.uses}</div></div>
+              {ing.avg !== null && <div><div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>Avg Rating</div><div style={{ fontFamily: "'Cinzel', serif", fontSize: 16, color: ing.avg >= 4 ? 'var(--green)' : ing.avg >= 3 ? 'var(--amber)' : 'var(--muted)' }}>{ing.avg}/5</div></div>}
+            </div>
+            {ing.intentTypes.length > 0 && (
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {ing.intentTypes.slice(0, 3).map(t => <span key={t} className="tag" style={{ fontSize: 10 }}>{t}</span>)}
+              </div>
+            )}
+            {ing.lift === null && ing.uses < 2 && <p style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic', marginTop: 8 }}>Use in 2+ rituals to unlock lift data.</p>}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
